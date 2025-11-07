@@ -31,6 +31,8 @@ public abstract class DJCommand extends MusicCommand
     {
         super(bot);
         this.category = new Category("DJ", event -> checkDJPermission(event));
+
+        this.ownerCommand = true;
     }
     
     public static boolean checkDJPermission(CommandEvent event)
