@@ -17,6 +17,7 @@ package com.jagrosh.jmusicbot.audio;
 
 import com.jagrosh.jmusicbot.Bot;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 
 import java.time.Instant;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class AloneInVoiceHandler
 {
     private final Bot bot;
+    ///  Guild -> Timeout
     private final HashMap<Long, Instant> aloneSince = new HashMap<>();
     private long aloneTimeUntilStop = 0;
 
@@ -40,14 +42,14 @@ public class AloneInVoiceHandler
     {
         this.bot = bot;
     }
-    
+
     public void init()
     {
         aloneTimeUntilStop = bot.getConfig().getAloneTimeUntilStop();
         if(aloneTimeUntilStop > 0)
             bot.getThreadpool().scheduleWithFixedDelay(() -> check(), 0, 5, TimeUnit.SECONDS);
     }
-    
+
     private void check()
     {
         Set<Long> toRemove = new HashSet<>();
@@ -73,18 +75,36 @@ public class AloneInVoiceHandler
 
     public void onVoiceUpdate(GuildVoiceUpdateEvent event)
     {
-        if(aloneTimeUntilStop <= 0) return;
-
         Guild guild = event.getEntity().getGuild();
+
+        if (guild.getAudioManager().getConnectedChannel() == null &&
+                event.getEntity().getUser().getIdLong() != bot.getJDA().getSelfUser().getIdLong()) {
+            // not connected, we might join here if someone enters the channel
+            var settings = bot.getSettingsManager().getSettings(guild);
+            assert settings != null;
+
+            String defpl = settings.getDefaultPlaylist();
+            VoiceChannel vc = settings.getVoiceChannel(guild);
+
+            var joinedChannel = event.getChannelJoined();
+
+            if(defpl!=null && vc!=null && joinedChannel.getIdLong() == vc.getIdLong())
+            {
+                if (bot.getPlayerManager().setUpHandler(guild).playFromDefault())
+                {
+                    guild.getAudioManager().openAudioConnection(vc);
+                }
+            }
+        }
+        //if(aloneTimeUntilStop <= 0) return;
+
         if(!bot.getPlayerManager().hasHandler(guild)) return;
 
-        boolean alone = isAlone(guild);
-        boolean inList = aloneSince.containsKey(guild.getIdLong());
-
-        if(!alone && inList)
-            aloneSince.remove(guild.getIdLong());
-        else if(alone && !inList)
-            aloneSince.put(guild.getIdLong(), Instant.now());
+        if (isAlone(guild))
+        {
+            ((AudioHandler) guild.getAudioManager().getSendingHandler()).stopAndClear();
+            guild.getAudioManager().closeAudioConnection();
+        }
     }
 
     private boolean isAlone(Guild guild)
