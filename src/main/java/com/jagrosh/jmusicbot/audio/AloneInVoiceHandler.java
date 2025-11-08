@@ -88,7 +88,7 @@ public class AloneInVoiceHandler
 
             var joinedChannel = event.getChannelJoined();
 
-            if(defpl!=null && vc!=null && joinedChannel.getIdLong() == vc.getIdLong())
+            if(joinedChannel!=null && defpl!=null && vc!=null && joinedChannel.getIdLong() == vc.getIdLong())
             {
                 if (bot.getPlayerManager().setUpHandler(guild).playFromDefault())
                 {
