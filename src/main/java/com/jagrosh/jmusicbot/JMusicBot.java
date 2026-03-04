@@ -15,6 +15,7 @@
  */
 package com.jagrosh.jmusicbot;
 
+import club.minnced.discord.jdave.interop.JDaveSessionFactory;
 import com.jagrosh.jdautilities.command.CommandClient;
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
@@ -32,6 +33,7 @@ import java.awt.Color;
 import java.util.Arrays;
 import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.*;
+import net.dv8tion.jda.api.audio.AudioModuleConfig;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -124,6 +126,8 @@ public class JMusicBot
                             ? OnlineStatus.INVISIBLE : OnlineStatus.DO_NOT_DISTURB)
                     .addEventListeners(client, waiter, new Listener(bot))
                     .setBulkDeleteSplittingEnabled(true)
+                    .setAudioModuleConfig(new AudioModuleConfig()
+                            .withDaveSessionFactory(new JDaveSessionFactory()))
                     .build();
             bot.setJDA(jda);
 
